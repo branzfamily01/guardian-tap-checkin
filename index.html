@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0057ff">
 <title>在校生保護者 かんたん受付</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -12,7 +13,7 @@
     <div class="eyebrow">目高祭・在校生保護者受付</div>
     <h1>画面を順番にタップしてください</h1>
   </div>
-  <a class="help" href="manual.html">？ 使い方</a>
+  <a class="help" href="manual.html" aria-label="スタッフ向け使い方">スタッフ用・使い方</a>
 </header>
 
 <main id="app" class="app-shell" aria-live="polite"></main>
@@ -23,5 +24,12 @@
 </footer>
 
 <script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
 </body>
 </html>
