@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "title": "在校生保護者 かんたん受付",
+  "category": "Tools",
+  "summary": "学年・クラス・生徒名・保護者人数・同行者人数を大きなボタンで選ぶタップ式受付。",
+  "tags": ["文化祭", "受付", "保護者", "タップ操作"],
+  "color": "blue",
+  "status": "active",
+  "visibility": "public",
+  "manualUrl": "https://branzfamily01.github.io/guardian-tap-checkin/manual.html"
+}
