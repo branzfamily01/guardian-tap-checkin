@@ -13,6 +13,26 @@ function records(){ try{return JSON.parse(localStorage.getItem(RECORD_KEY)||"[]"
 function saveRecords(v){localStorage.setItem(RECORD_KEY,JSON.stringify(v));}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 
+// 画面表示専用。正式な氏名データは変えず、端末・フォントで欠けやすい旧字体/異体字だけ新字体へ寄せる。
+const DISPLAY_KANJI_MAP = {
+  "﨑":"崎", "髙":"高", "德":"徳", "濱":"浜", "邊":"辺", "邉":"辺",
+  "塚":"塚", "瀨":"瀬", "神":"神", "福":"福", "羽":"羽", "猪":"猪",
+  "益":"益", "晴":"晴", "﨔":"欅", "礼":"礼", "都":"都", "飯":"飯",
+  "館":"館", "鶴":"鶴", "祥":"祥", "靖":"靖", "精":"精", "諸":"諸",
+  "﨤":"返", "逸":"逸", "都":"都", "侮":"侮", "僧":"僧", "免":"免",
+  "勉":"勉", "勤":"勤", "卑":"卑", "喝":"喝", "嘆":"嘆", "器":"器",
+  "墨":"墨", "層":"層", "悔":"悔", "憎":"憎", "懲":"懲", "敏":"敏",
+  "暑":"暑", "梅":"梅", "海":"海", "漢":"漢", "琢":"琢", "碑":"碑",
+  "社":"社", "祉":"祉", "祈":"祈", "祐":"祐", "祖":"祖", "祝":"祝",
+  "禍":"禍", "禎":"禎", "穀":"穀", "突":"突", "節":"節", "練":"練",
+  "繁":"繁", "署":"署", "者":"者", "臭":"臭", "著":"著", "褐":"褐",
+  "視":"視", "謁":"謁", "謹":"謹", "賓":"賓", "贈":"贈", "逸":"逸",
+  "難":"難", "響":"響", "頻":"頻"
+};
+function displayName(s){
+  return String(s??"").normalize("NFKC").replace(/[切-頻髙邊邉濱德瀨]/g,ch=>DISPLAY_KANJI_MAP[ch]||ch);
+}
+
 function parseCSV(text){
   const rows=[]; let row=[],cell="",quoted=false; const src=text.replace(/^\uFEFF/,"");
   for(let i=0;i<src.length;i++){
@@ -71,15 +91,15 @@ function renderInitials(list){
 }
 function renderStudents(list){
   const recs=records(); const students=list.filter(r=>r.grade===state.grade&&r.className===state.className&&kanaGroup(r.surnameKana)===state.initial).sort((a,b)=>a.surnameKana.localeCompare(b.surnameKana,"ja")||Number(a.number)-Number(b.number));
-  app.innerHTML=`<div class="step-kicker">STEP 4 / 6</div><div class="choice-summary">${esc(state.grade)}年 ${esc(state.className)}組　「${esc(state.initial)}」</div><h2 class="step-title">お子さまの名前を<br>押してください</h2><p class="step-sub">受付済みの名前には ✓ がつきます。</p><div class="name-grid">${students.map((s,i)=>{const checked=recs.some(r=>r.student===s.name&&r.grade===s.grade&&r.className===s.className);return `<button class="name-btn ${checked?"checked":""}" data-index="${i}">${checked?"✓ ":""}${esc(s.name)}</button>`;}).join("")}</div>`;
+  app.innerHTML=`<div class="step-kicker">STEP 4 / 6</div><div class="choice-summary">${esc(state.grade)}年 ${esc(state.className)}組　「${esc(state.initial)}」</div><h2 class="step-title">お子さまの名前を<br>押してください</h2><p class="step-sub">受付済みの名前には ✓ がつきます。</p><div class="name-grid">${students.map((s,i)=>{const checked=recs.some(r=>r.student===s.name&&r.grade===s.grade&&r.className===s.className);return `<button class="name-btn ${checked?"checked":""}" data-index="${i}">${checked?"✓ ":""}${esc(displayName(s.name))}</button>`;}).join("")}</div>`;
   app.querySelectorAll("[data-index]").forEach(b=>b.onclick=()=>{state.student=students[Number(b.dataset.index)];const already=recs.some(r=>r.student===state.student.name&&r.grade===state.student.grade&&r.className===state.student.className);if(already&&!confirm("この生徒はすでに受付記録があります。\n別の保護者が後から来た場合は「OK」を押して続けてください。")){state.student=null;return;}render();});
 }
 function renderGuardians(){
-  app.innerHTML=`<div class="step-kicker">STEP 5 / 6</div><div class="choice-summary">${esc(state.grade)}年 ${esc(state.className)}組　${esc(state.student.name)}</div><h2 class="step-title">保護者は<br>何名ですか？</h2><p class="step-sub">保護者 ＝ お父さま・お母さま</p><div class="grid two"><button class="big-btn primary" data-g="1">1名</button><button class="big-btn primary" data-g="2">2名</button></div>`;
+  app.innerHTML=`<div class="step-kicker">STEP 5 / 6</div><div class="choice-summary">${esc(state.grade)}年 ${esc(state.className)}組　${esc(displayName(state.student.name))}</div><h2 class="step-title">保護者は<br>何名ですか？</h2><p class="step-sub">保護者 ＝ お父さま・お母さま</p><div class="grid two"><button class="big-btn primary" data-g="1">1名</button><button class="big-btn primary" data-g="2">2名</button></div>`;
   app.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{state.guardian=Number(b.dataset.g);render();});
 }
 function renderCompanions(){
-  app.innerHTML=`<div class="step-kicker">STEP 6 / 6</div><div class="choice-summary">${esc(state.grade)}年 ${esc(state.className)}組　${esc(state.student.name)}<br>保護者 ${state.guardian}名</div><h2 class="step-title">同行者は<br>何名ですか？</h2><p class="step-sub">同行者 ＝ 祖父母・きょうだい・その他の方</p><div class="count-grid">${[0,1,2,3,4,5,6,7,8,9].map(n=>`<button class="count-btn" data-c="${n}">${n}<span>名</span></button>`).join("")}</div>`;
+  app.innerHTML=`<div class="step-kicker">STEP 6 / 6</div><div class="choice-summary">${esc(state.grade)}年 ${esc(state.className)}組　${esc(displayName(state.student.name))}<br>保護者 ${state.guardian}名</div><h2 class="step-title">同行者は<br>何名ですか？</h2><p class="step-sub">同行者 ＝ 祖父母・きょうだい・その他の方</p><div class="count-grid">${[0,1,2,3,4,5,6,7,8,9].map(n=>`<button class="count-btn" data-c="${n}">${n}<span>名</span></button>`).join("")}</div>`;
   app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>complete(Number(b.dataset.c)));
 }
 function complete(companion){
@@ -93,7 +113,7 @@ function downloadRecords(){
 undoBtn.onclick=()=>{if(adminMode){render();return;}if(state.guardian!==null){state.guardian=null;return render();}if(state.student){state.student=null;return render();}if(state.initial){state.initial=null;return render();}if(state.className){state.className=null;return render();}if(state.grade){state.grade=null;return render();}};
 adminBtn.onclick=()=>{
   adminMode=true;const all=records();const g=all.reduce((s,r)=>s+Number(r.guardians||0),0),c=all.reduce((s,r)=>s+Number(r.companions||0),0),t=all.reduce((s,r)=>s+Number(r.total||0),0);
-  app.innerHTML=`<div class="step-kicker">受付状況</div><h2 class="step-title">受付集計</h2><div class="stats"><div class="stat"><span>受付件数</span><strong>${all.length}</strong></div><div class="stat"><span>保護者</span><strong>${g}</strong></div><div class="stat"><span>同行者</span><strong>${c}</strong></div><div class="stat"><span>合計</span><strong>${t}</strong></div></div><div class="admin-actions"><button class="big-btn secondary compact" id="exportBtn">受付記録をCSV保存</button><button class="big-btn secondary compact" id="reloadRosterBtn">名簿を入れ替える</button></div><div class="admin-card"><div class="table-wrap"><table><thead><tr><th>学年</th><th>組</th><th>生徒</th><th>保護者</th><th>同行者</th><th>合計</th></tr></thead><tbody>${all.slice().reverse().map(r=>`<tr><td>${esc(r.grade)}年</td><td>${esc(r.className)}組</td><td>${esc(r.student)}</td><td>${r.guardians}</td><td>${r.companions}</td><td>${r.total}</td></tr>`).join("")}</tbody></table></div></div><button class="big-btn primary compact" id="backReception">受付へ戻る</button>`;
+  app.innerHTML=`<div class="step-kicker">受付状況</div><h2 class="step-title">受付集計</h2><div class="stats"><div class="stat"><span>受付件数</span><strong>${all.length}</strong></div><div class="stat"><span>保護者</span><strong>${g}</strong></div><div class="stat"><span>同行者</span><strong>${c}</strong></div><div class="stat"><span>合計</span><strong>${t}</strong></div></div><div class="admin-actions"><button class="big-btn secondary compact" id="exportBtn">受付記録をCSV保存</button><button class="big-btn secondary compact" id="reloadRosterBtn">名簿を入れ替える</button></div><div class="admin-card"><div class="table-wrap"><table><thead><tr><th>学年</th><th>組</th><th>生徒</th><th>保護者</th><th>同行者</th><th>合計</th></tr></thead><tbody>${all.slice().reverse().map(r=>`<tr><td>${esc(r.grade)}年</td><td>${esc(r.className)}組</td><td>${esc(displayName(r.student))}</td><td>${r.guardians}</td><td>${r.companions}</td><td>${r.total}</td></tr>`).join("")}</tbody></table></div></div><button class="big-btn primary compact" id="backReception">受付へ戻る</button>`;
   document.getElementById("exportBtn").onclick=downloadRecords;document.getElementById("reloadRosterBtn").onclick=()=>{if(confirm("端末に保存した名簿を消して、別のCSVを読み込みますか？\n受付記録は消えません。")){localStorage.removeItem(ROSTER_KEY);renderSetup("名簿を入れ替えてください。");}};document.getElementById("backReception").onclick=()=>render();
 };
 render();
